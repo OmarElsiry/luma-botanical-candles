@@ -21,10 +21,10 @@ export default defineConfig(() => {
             return;
           }
           const distDir = path.resolve(__dirname, 'dist');
-          const srcAssets = path.resolve(__dirname, 'src/assets');
-          const distAssets = path.resolve(distDir, 'src/assets');
-          if (fs.existsSync(distDir) && fs.existsSync(srcAssets)) {
-            fs.cpSync(srcAssets, distAssets, {recursive: true, force: true});
+          const srcImages = path.resolve(__dirname, 'src/assets/images');
+          const distImages = path.resolve(distDir, 'src/assets/images');
+          if (fs.existsSync(distDir) && fs.existsSync(srcImages)) {
+            fs.cpSync(srcImages, distImages, {recursive: true, force: true});
           }
         },
       },
@@ -32,6 +32,20 @@ export default defineConfig(() => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
+      },
+    },
+    build: {
+      modulePreload: {
+        polyfill: false,
+      },
+      rolldownOptions: {
+        output: {
+          manualChunks(id) {
+            if (/[\\/]node_modules[\\/](@?firebase)[\\/]/.test(id)) {
+              return 'vendor-firebase';
+            }
+          },
+        },
       },
     },
     server: {

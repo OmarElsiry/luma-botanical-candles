@@ -370,7 +370,7 @@ export function RegisterPage() {
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.65, ease: LUMA_EASE }}
-          className="mx-auto max-w-md rounded-3xl border p-6 shadow-[0_24px_60px_rgba(60,40,80,0.16)] backdrop-blur-md sm:p-8"
+          className="mx-auto max-w-md rounded-3xl border p-6 shadow-[0_24px_60px_rgba(60,40,80,0.16)] sm:p-8"
           style={{
             backgroundColor: activeScent.surface,
             borderColor: `${activeScent.accentInk}1C`,
@@ -483,7 +483,7 @@ export function RegisterPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, ease: LUMA_EASE }}
-            className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-3xl border p-5 shadow-[0_18px_45px_rgba(60,40,80,0.14)] backdrop-blur-md"
+            className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-3xl border p-5 shadow-[0_18px_45px_rgba(60,40,80,0.14)]"
             style={{
               backgroundColor: activeScent.surface,
               borderColor: `${activeScent.accentInk}20`,
@@ -519,7 +519,7 @@ export function RegisterPage() {
           {/* Saved Delivery Profile (Split First Name & Surname) */}
           <form
             onSubmit={handleProfileSave}
-            className="space-y-4 rounded-3xl border p-6 shadow-[0_24px_60px_rgba(60,40,80,0.14)] backdrop-blur-md lg:col-span-5"
+            className="space-y-4 rounded-3xl border p-6 shadow-[0_24px_60px_rgba(60,40,80,0.14)] lg:col-span-5"
             style={{
               backgroundColor: activeScent.surface,
               borderColor: `${activeScent.accentInk}1C`,
@@ -642,7 +642,7 @@ export function RegisterPage() {
             </h2>
             {orders.length === 0 ? (
               <div
-                className="rounded-3xl border p-8 text-center shadow-[0_24px_60px_rgba(60,40,80,0.14)] backdrop-blur-md"
+                className="rounded-3xl border p-8 text-center shadow-[0_24px_60px_rgba(60,40,80,0.14)]"
                 style={{
                   backgroundColor: activeScent.surface,
                   borderColor: `${activeScent.accentInk}1C`,
@@ -665,7 +665,7 @@ export function RegisterPage() {
                 {orders.map((order, idx) => (
                   <li
                     key={order.orderNumber}
-                    className="rounded-3xl border p-5 shadow-[0_20px_50px_rgba(60,40,80,0.14)] backdrop-blur-md sm:p-6"
+                    className="rounded-3xl border p-5 shadow-[0_20px_50px_rgba(60,40,80,0.14)] sm:p-6"
                     style={{
                       backgroundColor: activeScent.surface,
                       borderColor: `${activeScent.accentInk}1C`,
@@ -761,7 +761,7 @@ export function RegisterPage() {
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.65, ease: LUMA_EASE }}
-        className="mx-auto max-w-md rounded-3xl border p-5 shadow-[0_24px_60px_rgba(60,40,80,0.16)] backdrop-blur-md sm:p-8"
+        className="mx-auto max-w-md rounded-3xl border p-5 shadow-[0_24px_60px_rgba(60,40,80,0.16)] sm:p-8"
         style={{
           backgroundColor: activeScent.surface,
           borderColor: `${activeScent.accentInk}1C`,

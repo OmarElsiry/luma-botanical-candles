@@ -343,7 +343,7 @@ export function DesignCandlePage() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.08, ease: LUMA_EASE }}
-          className="min-w-0 rounded-3xl border p-5 shadow-[0_24px_60px_rgba(60,40,80,0.14)] backdrop-blur-md transition-colors duration-500 sm:p-7 lg:col-span-6"
+          className="min-w-0 rounded-3xl border p-5 shadow-[0_24px_60px_rgba(60,40,80,0.14)] transition-colors duration-500 sm:p-7 lg:col-span-6"
           style={{
             backgroundColor: primaryScent.surface,
             borderColor: `${primaryScent.accentInk}1C`,

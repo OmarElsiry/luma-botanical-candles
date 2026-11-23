@@ -165,7 +165,7 @@ export function CartPage() {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.65, ease: LUMA_EASE }}
-            className="mx-auto mt-8 max-w-xl rounded-3xl border p-8 text-center shadow-[0_24px_60px_rgba(60,40,80,0.16)] backdrop-blur-md sm:p-10"
+            className="mx-auto mt-8 max-w-xl rounded-3xl border p-8 text-center shadow-[0_24px_60px_rgba(60,40,80,0.16)] sm:p-10"
             style={{
               backgroundColor: activeScent.surface,
               borderColor: `${activeScent.accentInk}1C`,
@@ -211,7 +211,7 @@ export function CartPage() {
             {/* Left: Itemized Cart List */}
             <section
               aria-label="Cart items"
-              className="rounded-3xl border p-5 shadow-[0_24px_60px_rgba(60,40,80,0.14)] backdrop-blur-md sm:p-7 lg:col-span-7"
+              className="rounded-3xl border p-5 shadow-[0_24px_60px_rgba(60,40,80,0.14)] sm:p-7 lg:col-span-7"
               style={{
                 backgroundColor: activeScent.surface,
                 borderColor: `${activeScent.accentInk}1C`,
@@ -381,7 +381,7 @@ export function CartPage() {
 
             {/* Right: Free Courier Meter, Account Gate Status & Totals */}
             <aside
-              className="rounded-3xl border p-5 shadow-[0_24px_60px_rgba(60,40,80,0.14)] backdrop-blur-md sm:p-7 lg:sticky lg:top-24 lg:col-span-5"
+              className="rounded-3xl border p-5 shadow-[0_24px_60px_rgba(60,40,80,0.14)] sm:p-7 lg:sticky lg:top-24 lg:col-span-5"
               style={{
                 backgroundColor: activeScent.surface,
                 borderColor: `${activeScent.accentInk}1C`,

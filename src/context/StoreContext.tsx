@@ -1,30 +1,7 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import {
-  type User as FirebaseUser,
-  createUserWithEmailAndPassword,
-  onAuthStateChanged,
-  reload,
-  sendEmailVerification,
-  sendPasswordResetEmail,
-  signInWithEmailAndPassword,
-  signInWithPopup,
-  signOut as firebaseSignOut,
-  updateProfile,
-} from 'firebase/auth';
-import {
-  collection,
-  deleteDoc,
-  doc,
-  getDoc,
-  onSnapshot,
-  orderBy,
-  query,
-  serverTimestamp,
-  setDoc,
-  updateDoc,
-  where,
-} from 'firebase/firestore';
-import { auth, db, firebaseProjectId, googleProvider, handleFirestoreError, OperationType, testFirestoreConnection } from '../firebase';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import type { User as FirebaseUser } from 'firebase/auth';
+import firebaseConfig from '../../firebase-applet-config.json';
+import { OperationType, loadFirebaseBundle } from '../firebaseLazy';
 import {
   CANDLE_FONTS,
   CANDLE_INKS,
@@ -230,27 +207,51 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [flowNotice, setFlowNotice] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    void testFirestoreConnection();
+  const firebaseProjectId = firebaseConfig.projectId;
+  const firebaseInitializedRef = useRef(false);
+  const [firebaseTrigger, setFirebaseTrigger] = useState(0);
+
+  const triggerFirebaseInit = useCallback(() => {
+    if (!firebaseInitializedRef.current) {
+      firebaseInitializedRef.current = true;
+      setFirebaseTrigger((v) => v + 1);
+    }
   }, []);
 
-  // Preload candle & botanical images
+  // Activate Firebase immediately when returning user exists or visiting auth/order/studio pages;
+  // otherwise defer until hero initial paint & interactions are idle.
   useEffect(() => {
-    SCENTS.forEach((scent) => {
-      const candle = new Image();
-      candle.src = scent.candleImg;
-      const botanical = new Image();
-      botanical.src = scent.botanicalImg;
-    });
-  }, []);
+    if (firebaseInitializedRef.current) return;
+    if (
+      user !== null ||
+      route.page === 'register' ||
+      route.page === 'checkout' ||
+      route.page === 'design'
+    ) {
+      triggerFirebaseInit();
+      return;
+    }
+    const timerId = window.setTimeout(() => {
+      triggerFirebaseInit();
+    }, 1800);
+    return () => window.clearTimeout(timerId);
+  }, [route.page, user, triggerFirebaseInit]);
 
   // Firebase Auth state + Firestore profile / orders / saved designs & blends sync
   useEffect(() => {
+    if (firebaseTrigger === 0) return;
+
+    let cancelled = false;
+    let unsubAuth: (() => void) | null = null;
     let unsubOrders: (() => void) | null = null;
     let unsubDesigns: (() => void) | null = null;
     let unsubBlends: (() => void) | null = null;
 
-    const unsubAuth = onAuthStateChanged(auth, async (fbUser) => {
+    void loadFirebaseBundle().then((fb) => {
+      if (cancelled) return;
+      void fb.testFirestoreConnection();
+
+      unsubAuth = fb.onAuthStateChanged(fb.auth, async (fbUser) => {
       if (unsubOrders) {
         unsubOrders();
         unsubOrders = null;
@@ -274,9 +275,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const userRef = doc(db, 'users', fbUser.uid);
+      const userRef = fb.doc(fb.db, 'users', fbUser.uid);
       try {
-        const snap = await getDoc(userRef);
+        const snap = await fb.getDoc(userRef);
         const derived = splitDisplayName(fbUser.displayName, fbUser.email);
         if (snap.exists()) {
           const data = snap.data();
@@ -299,9 +300,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
                 : new Date().toISOString(),
           });
           if (Boolean(data.emailVerified) !== fbUser.emailVerified) {
-            await updateDoc(userRef, {
+            await fb.updateDoc(userRef, {
               emailVerified: fbUser.emailVerified,
-              updatedAt: serverTimestamp(),
+              updatedAt: fb.serverTimestamp(),
             }).catch(() => {});
           }
         } else {
@@ -319,7 +320,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             createdAt: new Date().toISOString(),
           };
           setUser(profilePayload);
-          await setDoc(userRef, {
+          await fb.setDoc(userRef, {
             uid: fbUser.uid,
             firstName: derived.firstName,
             surname: derived.surname,
@@ -329,21 +330,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             address: '',
             city: '',
             postalCode: '',
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
+            createdAt: fb.serverTimestamp(),
+            updatedAt: fb.serverTimestamp(),
           });
         }
       } catch (error) {
-        handleFirestoreError(error, OperationType.GET, `users/${fbUser.uid}`);
+        fb.handleFirestoreError(error, OperationType.GET, `users/${fbUser.uid}`);
       }
 
       // Listen to user's orders
-      const ordersQ = query(
-        collection(db, 'orders'),
-        where('userId', '==', fbUser.uid),
-        orderBy('createdAt', 'desc')
+      const ordersQ = fb.query(
+        fb.collection(fb.db, 'orders'),
+        fb.where('userId', '==', fbUser.uid),
+        fb.orderBy('createdAt', 'desc')
       );
-      unsubOrders = onSnapshot(
+      unsubOrders = fb.onSnapshot(
         ordersQ,
         (snapshot) => {
           const cloudOrders: OrderRecord[] = snapshot.docs.map((d) => {
@@ -388,20 +389,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           });
         },
         (error) => {
-          // Graceful fallback if composite index isn't built yet
           if (error instanceof Error && error.message.toLowerCase().includes('index')) {
             return;
           }
-          handleFirestoreError(error, OperationType.LIST, 'orders');
+          fb.handleFirestoreError(error, OperationType.LIST, 'orders');
         }
       );
 
       // Listen to saved custom candle designs
-      const designsQ = query(
-        collection(db, 'users', fbUser.uid, 'designs'),
-        where('userId', '==', fbUser.uid)
+      const designsQ = fb.query(
+        fb.collection(fb.db, 'users', fbUser.uid, 'designs'),
+        fb.where('userId', '==', fbUser.uid)
       );
-      unsubDesigns = onSnapshot(
+      unsubDesigns = fb.onSnapshot(
         designsQ,
         (snapshot) => {
           const list: SavedDesignRecord[] = snapshot.docs.map((d) => {
@@ -435,15 +435,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           setSavedDesigns(list);
         },
         (error) => {
-          handleFirestoreError(error, OperationType.LIST, `users/${fbUser.uid}/designs`);
+          fb.handleFirestoreError(error, OperationType.LIST, `users/${fbUser.uid}/designs`);
         }
       );
       // Listen to saved custom smoothie blends
-      const blendsQ = query(
-        collection(db, 'users', fbUser.uid, 'blends'),
-        where('userId', '==', fbUser.uid)
+      const blendsQ = fb.query(
+        fb.collection(fb.db, 'users', fbUser.uid, 'blends'),
+        fb.where('userId', '==', fbUser.uid)
       );
-      unsubBlends = onSnapshot(
+      unsubBlends = fb.onSnapshot(
         blendsQ,
         (snapshot) => {
           const list: SavedBlendRecord[] = snapshot.docs.map((d) => {
@@ -477,18 +477,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           setSavedBlends(list);
         },
         (error) => {
-          handleFirestoreError(error, OperationType.LIST, `users/${fbUser.uid}/blends`);
+          fb.handleFirestoreError(error, OperationType.LIST, `users/${fbUser.uid}/blends`);
         }
       );
+      });
     });
 
     return () => {
-      unsubAuth();
+      cancelled = true;
+      if (unsubAuth) unsubAuth();
       if (unsubOrders) unsubOrders();
       if (unsubDesigns) unsubDesigns();
       if (unsubBlends) unsubBlends();
     };
-  }, []);
+  }, [firebaseTrigger]);
 
   // Sync hash navigation & active pastel mood
   useEffect(() => {
@@ -640,16 +642,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const registerWithEmail = useCallback(
     async (input: { firstName: string; surname: string; email: string; password: string }) => {
+      triggerFirebaseInit();
+      const fb = await loadFirebaseBundle();
       const first = input.firstName.trim();
       const last = input.surname.trim();
       const fullName = `${first} ${last}`.trim();
-      const cred = await createUserWithEmailAndPassword(auth, input.email.trim(), input.password);
-      await updateProfile(cred.user, { displayName: fullName });
-      await sendEmailVerification(cred.user);
+      const cred = await fb.createUserWithEmailAndPassword(fb.auth, input.email.trim(), input.password);
+      await fb.updateProfile(cred.user, { displayName: fullName });
+      await fb.sendEmailVerification(cred.user);
 
       const profilePath = `users/${cred.user.uid}`;
       try {
-        await setDoc(doc(db, 'users', cred.user.uid), {
+        await fb.setDoc(fb.doc(fb.db, 'users', cred.user.uid), {
           uid: cred.user.uid,
           firstName: first,
           surname: last,
@@ -659,11 +663,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           address: '',
           city: '',
           postalCode: '',
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
+          createdAt: fb.serverTimestamp(),
+          updatedAt: fb.serverTimestamp(),
         });
       } catch (error) {
-        handleFirestoreError(error, OperationType.CREATE, profilePath);
+        fb.handleFirestoreError(error, OperationType.CREATE, profilePath);
       }
 
       setUser({
@@ -681,43 +685,53 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       });
       setEmailVerified(cred.user.emailVerified);
     },
-    []
+    [triggerFirebaseInit]
   );
 
-  const signInWithEmail = useCallback(async (input: { email: string; password: string }) => {
-    const cred = await signInWithEmailAndPassword(auth, input.email.trim(), input.password);
-    setEmailVerified(cred.user.emailVerified);
-  }, []);
+  const signInWithEmail = useCallback(
+    async (input: { email: string; password: string }) => {
+      triggerFirebaseInit();
+      const fb = await loadFirebaseBundle();
+      const cred = await fb.signInWithEmailAndPassword(fb.auth, input.email.trim(), input.password);
+      setEmailVerified(cred.user.emailVerified);
+    },
+    [triggerFirebaseInit]
+  );
 
   const signInWithGoogle = useCallback(async () => {
-    const cred = await signInWithPopup(auth, googleProvider);
+    triggerFirebaseInit();
+    const fb = await loadFirebaseBundle();
+    const cred = await fb.signInWithPopup(fb.auth, fb.googleProvider);
     setEmailVerified(cred.user.emailVerified);
-  }, []);
+  }, [triggerFirebaseInit]);
 
   const resendVerificationEmail = useCallback(async () => {
-    if (!auth.currentUser) throw new Error('No signed-in user.');
-    await sendEmailVerification(auth.currentUser);
+    const fb = await loadFirebaseBundle();
+    if (!fb.auth.currentUser) throw new Error('No signed-in user.');
+    await fb.sendEmailVerification(fb.auth.currentUser);
   }, []);
 
   const refreshVerificationStatus = useCallback(async (): Promise<boolean> => {
-    if (!auth.currentUser) return false;
-    await reload(auth.currentUser);
-    const verified = Boolean(auth.currentUser.emailVerified);
+    const fb = await loadFirebaseBundle();
+    if (!fb.auth.currentUser) return false;
+    await fb.reload(fb.auth.currentUser);
+    const verified = Boolean(fb.auth.currentUser.emailVerified);
     setEmailVerified(verified);
-    setFirebaseUser(auth.currentUser);
+    setFirebaseUser(fb.auth.currentUser);
     if (verified && user) {
       setUser({ ...user, emailVerified: true });
-      const userRef = doc(db, 'users', auth.currentUser.uid);
-      await updateDoc(userRef, {
+      const userRef = fb.doc(fb.db, 'users', fb.auth.currentUser.uid);
+      await fb.updateDoc(userRef, {
         emailVerified: true,
-        updatedAt: serverTimestamp(),
+        updatedAt: fb.serverTimestamp(),
       }).catch(() => {});
     }
     return verified;
   }, [user]);
 
   const sendPasswordReset = useCallback(async (email: string) => {
-    await sendPasswordResetEmail(auth, email.trim());
+    const fb = await loadFirebaseBundle();
+    await fb.sendPasswordResetEmail(fb.auth, email.trim());
   }, []);
 
   const saveUserProfile = useCallback(
@@ -729,15 +743,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       city: string;
       postalCode: string;
     }) => {
+      const fb = await loadFirebaseBundle();
       const first = profile.firstName.trim();
       const last = profile.surname.trim();
       const updatedLocal: UserProfile = {
-        uid: auth.currentUser?.uid ?? user?.uid,
+        uid: fb.auth.currentUser?.uid ?? user?.uid,
         firstName: first,
         surname: last,
         name: `${first} ${last}`.trim(),
-        email: auth.currentUser?.email ?? user?.email ?? '',
-        emailVerified: auth.currentUser?.emailVerified ?? user?.emailVerified ?? false,
+        email: fb.auth.currentUser?.email ?? user?.email ?? '',
+        emailVerified: fb.auth.currentUser?.emailVerified ?? user?.emailVerified ?? false,
         phone: profile.phone.trim(),
         address: profile.address.trim(),
         city: profile.city.trim(),
@@ -746,21 +761,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       };
       setUser(updatedLocal);
 
-      if (auth.currentUser) {
-        const path = `users/${auth.currentUser.uid}`;
+      if (fb.auth.currentUser) {
+        const path = `users/${fb.auth.currentUser.uid}`;
         try {
-          await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+          await fb.updateDoc(fb.doc(fb.db, 'users', fb.auth.currentUser.uid), {
             firstName: first,
             surname: last,
-            emailVerified: auth.currentUser.emailVerified,
+            emailVerified: fb.auth.currentUser.emailVerified,
             phone: profile.phone.trim(),
             address: profile.address.trim(),
             city: profile.city.trim(),
             postalCode: profile.postalCode.trim(),
-            updatedAt: serverTimestamp(),
+            updatedAt: fb.serverTimestamp(),
           });
         } catch (error) {
-          handleFirestoreError(error, OperationType.UPDATE, path);
+          fb.handleFirestoreError(error, OperationType.UPDATE, path);
         }
       }
     },
@@ -768,18 +783,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   );
 
   const saveCustomDesign = useCallback(async (spec: CustomCandleSpec) => {
-    if (!auth.currentUser) {
+    const fb = await loadFirebaseBundle();
+    if (!fb.auth.currentUser) {
       throw new Error('Sign in with a verified email to save designs to your studio.');
     }
-    if (!auth.currentUser.emailVerified) {
+    if (!fb.auth.currentUser.emailVerified) {
       throw new Error('Verify your email address first to save designs.');
     }
     const designId = `design_${Date.now()}`;
-    const path = `users/${auth.currentUser.uid}/designs/${designId}`;
+    const path = `users/${fb.auth.currentUser.uid}/designs/${designId}`;
     try {
-      await setDoc(doc(db, 'users', auth.currentUser.uid, 'designs', designId), {
+      await fb.setDoc(fb.doc(fb.db, 'users', fb.auth.currentUser.uid, 'designs', designId), {
         id: designId,
-        userId: auth.currentUser.uid,
+        userId: fb.auth.currentUser.uid,
         vesselColorId: spec.vesselColorId,
         vesselColorHex: spec.vesselColorHex,
         scentId: spec.scentId,
@@ -787,29 +803,31 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         customSubtext: (spec.customSubtext ?? '').trim().slice(0, 32),
         fontId: spec.fontId,
         inkId: spec.inkId,
-        createdAt: serverTimestamp(),
+        createdAt: fb.serverTimestamp(),
       });
       setToastMessage('Saved custom candle design to your studio');
     } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, path);
+      fb.handleFirestoreError(error, OperationType.CREATE, path);
     }
   }, []);
 
   const deleteCustomDesign = useCallback(async (designId: string) => {
-    if (!auth.currentUser) return;
-    const path = `users/${auth.currentUser.uid}/designs/${designId}`;
+    const fb = await loadFirebaseBundle();
+    if (!fb.auth.currentUser) return;
+    const path = `users/${fb.auth.currentUser.uid}/designs/${designId}`;
     try {
-      await deleteDoc(doc(db, 'users', auth.currentUser.uid, 'designs', designId));
+      await fb.deleteDoc(fb.doc(fb.db, 'users', fb.auth.currentUser.uid, 'designs', designId));
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, path);
+      fb.handleFirestoreError(error, OperationType.DELETE, path);
     }
   }, []);
 
   const saveCustomBlend = useCallback(async (spec: CustomSmoothieBlendSpec) => {
-    if (!auth.currentUser) {
+    const fb = await loadFirebaseBundle();
+    if (!fb.auth.currentUser) {
       throw new Error('Sign in with a verified email to save blends to your studio.');
     }
-    if (!auth.currentUser.emailVerified) {
+    if (!fb.auth.currentUser.emailVerified) {
       throw new Error('Verify your email address first to save blends.');
     }
     const cleanFruits = spec.fruits.slice(0, 3);
@@ -817,37 +835,39 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Select at least 1 fruit base before saving.');
     }
     const blendId = `blend_${Date.now()}`;
-    const path = `users/${auth.currentUser.uid}/blends/${blendId}`;
+    const path = `users/${fb.auth.currentUser.uid}/blends/${blendId}`;
     try {
-      await setDoc(doc(db, 'users', auth.currentUser.uid, 'blends', blendId), {
+      await fb.setDoc(fb.doc(fb.db, 'users', fb.auth.currentUser.uid, 'blends', blendId), {
         id: blendId,
-        userId: auth.currentUser.uid,
+        userId: fb.auth.currentUser.uid,
         fruits: cleanFruits,
         toppings: spec.toppings.slice(0, 6),
         sweetness: spec.sweetness,
         size: spec.size,
         customText: spec.customText.trim().slice(0, 28),
         fontId: spec.fontId,
-        createdAt: serverTimestamp(),
+        createdAt: fb.serverTimestamp(),
       });
       setToastMessage('Saved custom smoothie blend to your studio');
     } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, path);
+      fb.handleFirestoreError(error, OperationType.CREATE, path);
     }
   }, []);
 
   const deleteCustomBlend = useCallback(async (blendId: string) => {
-    if (!auth.currentUser) return;
-    const path = `users/${auth.currentUser.uid}/blends/${blendId}`;
+    const fb = await loadFirebaseBundle();
+    if (!fb.auth.currentUser) return;
+    const path = `users/${fb.auth.currentUser.uid}/blends/${blendId}`;
     try {
-      await deleteDoc(doc(db, 'users', auth.currentUser.uid, 'blends', blendId));
+      await fb.deleteDoc(fb.doc(fb.db, 'users', fb.auth.currentUser.uid, 'blends', blendId));
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, path);
+      fb.handleFirestoreError(error, OperationType.DELETE, path);
     }
   }, []);
 
   const signOut = useCallback(async () => {
-    await firebaseSignOut(auth);
+    const fb = await loadFirebaseBundle();
+    await fb.signOut(fb.auth);
     setUser(null);
     setEmailVerified(false);
     setSavedDesigns([]);
@@ -869,10 +889,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       deliveryNotes?: string;
       paymentMethod: CodPaymentMethod;
     }): Promise<OrderRecord> => {
-      if (!auth.currentUser) {
+      const fb = await loadFirebaseBundle();
+      if (!fb.auth.currentUser) {
         throw new Error('Please sign in or create a Luma account before placing an order.');
       }
-      if (!auth.currentUser.emailVerified) {
+      if (!fb.auth.currentUser.emailVerified) {
         throw new Error('Please verify your email address before placing your COD order.');
       }
       if (cart.length === 0) {
@@ -907,9 +928,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
       const orderPath = `orders/${orderNumber}`;
       try {
-        await setDoc(doc(db, 'orders', orderNumber), {
+        await fb.setDoc(fb.doc(fb.db, 'orders', orderNumber), {
           orderNumber,
-          userId: auth.currentUser.uid,
+          userId: fb.auth.currentUser.uid,
           firstName: first,
           surname: last,
           customerName: fullName,
@@ -925,21 +946,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           itemCount: Math.max(1, summary.totalItems),
           itemsSummary: buildItemsSummary(cart),
           status: 'Confirmed',
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
+          createdAt: fb.serverTimestamp(),
+          updatedAt: fb.serverTimestamp(),
         });
 
-        await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+        await fb.updateDoc(fb.doc(fb.db, 'users', fb.auth.currentUser.uid), {
           firstName: first,
           surname: last,
           phone: shipping.phone.trim(),
           address: shipping.address.trim(),
           city: shipping.city.trim(),
           postalCode: shipping.postalCode.trim(),
-          updatedAt: serverTimestamp(),
+          updatedAt: fb.serverTimestamp(),
         }).catch(() => {});
       } catch (error) {
-        handleFirestoreError(error, OperationType.CREATE, orderPath);
+        fb.handleFirestoreError(error, OperationType.CREATE, orderPath);
       }
 
       setOrders((prev) => [order, ...prev]);
@@ -968,17 +989,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setOrders((prev) =>
       prev.map((o) => (o.orderNumber === orderNumber && o.status === 'Confirmed' ? { ...o, status: 'Cancelled' } : o))
     );
-    if (auth.currentUser && auth.currentUser.emailVerified) {
+    const fb = await loadFirebaseBundle();
+    if (fb.auth.currentUser && fb.auth.currentUser.emailVerified) {
       const orderPath = `orders/${orderNumber}`;
       try {
-        await updateDoc(doc(db, 'orders', orderNumber), {
+        await fb.updateDoc(fb.doc(fb.db, 'orders', orderNumber), {
           status: 'Cancelled',
-          updatedAt: serverTimestamp(),
+          updatedAt: fb.serverTimestamp(),
         });
       } catch (error) {
-        // Ignore if order was guest/local-only
         if (error instanceof Error && !error.message.includes('NOT_FOUND')) {
-          handleFirestoreError(error, OperationType.UPDATE, orderPath);
+          fb.handleFirestoreError(error, OperationType.UPDATE, orderPath);
         }
       }
     }

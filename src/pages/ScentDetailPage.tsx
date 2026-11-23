@@ -278,7 +278,7 @@ export function ScentDetailPage({ scentId }: { scentId: ScentId }) {
           className="space-y-6 lg:col-span-6"
         >
           <div
-            className="rounded-3xl border p-6 shadow-[0_24px_60px_rgba(60,40,80,0.14)] backdrop-blur-md sm:p-8"
+            className="rounded-3xl border p-6 shadow-[0_24px_60px_rgba(60,40,80,0.14)] sm:p-8"
             style={{
               backgroundColor: scent.surface,
               borderColor: `${scent.accentInk}1C`,
@@ -422,7 +422,7 @@ export function ScentDetailPage({ scentId }: { scentId: ScentId }) {
           <section
             data-testid="nutrition-facts-section"
             aria-labelledby="nutrition-facts-heading"
-            className="scroll-mt-24 overflow-hidden rounded-3xl border shadow-[0_20px_50px_rgba(60,40,80,0.12)] backdrop-blur-md"
+            className="scroll-mt-24 overflow-hidden rounded-3xl border shadow-[0_20px_50px_rgba(60,40,80,0.12)]"
             style={{
               backgroundColor: scent.surface,
               borderColor: `${scent.accentInk}1C`,
@@ -556,7 +556,7 @@ export function ScentDetailPage({ scentId }: { scentId: ScentId }) {
 
           {/* Fragrance Pyramid & Burn Specs */}
           <div
-            className="rounded-3xl border p-6 shadow-[0_20px_50px_rgba(60,40,80,0.12)] backdrop-blur-md sm:p-8"
+            className="rounded-3xl border p-6 shadow-[0_20px_50px_rgba(60,40,80,0.12)] sm:p-8"
             style={{
               backgroundColor: scent.surface,
               borderColor: `${scent.accentInk}1C`,

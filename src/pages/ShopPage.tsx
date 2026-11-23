@@ -145,7 +145,7 @@ export function ShopPage() {
               Display price for pack size
             </span>
             <div
-              className="inline-flex max-w-full overflow-x-auto rounded-2xl border p-1.5 shadow-[0_14px_34px_rgba(60,40,80,0.14)] backdrop-blur-md transition-colors duration-500"
+              className="inline-flex max-w-full overflow-x-auto rounded-2xl border p-1.5 shadow-[0_14px_34px_rgba(60,40,80,0.14)] transition-colors duration-500"
               style={{
                 backgroundColor: activeScent.surface,
                 borderColor: `${activeScent.accentInk}22`,
@@ -222,8 +222,7 @@ export function ShopPage() {
         </div>
 
         {/* 3-Column Botanical Product Grid with Staggered Entrance & Floating Nutrition Badge */}
-        <motion.section
-          layout
+        <section
           data-testid="shop-product-grid"
           className="mt-8 grid grid-cols-1 gap-7 sm:grid-cols-2 lg:grid-cols-3"
           aria-label="Product catalog"
@@ -240,23 +239,22 @@ export function ShopPage() {
               return (
                 <motion.article
                   key={scent.id}
-                  layout
                   data-testid={`product-card-${scent.id}`}
-                  initial={{ opacity: 0, y: 28, scale: 0.96 }}
+                  initial={{ opacity: 0, y: 20, scale: 0.97 }}
                   animate={{
                     opacity: 1,
                     y: 0,
                     scale: 1,
                     transition: {
-                      duration: 0.56,
-                      delay: idx * 0.085,
+                      duration: 0.42,
+                      delay: idx * 0.05,
                       ease: LUMA_EASE,
                     },
                   }}
-                  exit={{ opacity: 0, y: 12, scale: 0.95, transition: { duration: 0.22, ease: LUMA_EASE } }}
+                  exit={{ opacity: 0, y: 10, scale: 0.96, transition: { duration: 0.18, ease: LUMA_EASE } }}
                   onMouseEnter={() => setActiveScentId(scent.id)}
                   onFocus={() => setActiveScentId(scent.id)}
-                  className="group flex flex-col overflow-hidden rounded-3xl border shadow-[0_20px_50px_rgba(60,40,80,0.14)] backdrop-blur-md transition-[transform,box-shadow] duration-300 ease-out hover:-translate-y-1.5 hover:shadow-[0_28px_64px_rgba(60,40,80,0.22)]"
+                  className="group flex flex-col overflow-hidden rounded-3xl border shadow-[0_20px_50px_rgba(60,40,80,0.14)] transition-[transform,box-shadow] duration-300 ease-out hover:-translate-y-1.5 hover:shadow-[0_28px_64px_rgba(60,40,80,0.22)]"
                   style={{
                     backgroundColor: scent.surface,
                     borderColor: `${scent.accentInk}1A`,
@@ -273,7 +271,7 @@ export function ShopPage() {
                     {/* Floating Nutrition Highlight Badge ('High Vitamin C' or 'Energy Boost') */}
                     <span
                       data-testid={`nutrition-badge-${scent.id}`}
-                      className="pointer-events-none absolute left-3 top-3 z-30 inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-semibold tracking-wide shadow-[0_6px_16px_rgba(40,28,55,0.1)] backdrop-blur-md transition-transform duration-300 ease-out group-hover:-translate-y-0.5"
+                      className="pointer-events-none absolute left-3 top-3 z-30 inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-semibold tracking-wide shadow-[0_6px_16px_rgba(40,28,55,0.1)] transition-transform duration-300 ease-out group-hover:-translate-y-0.5"
                       style={{
                         backgroundColor: scent.surface,
                         borderColor: `${scent.accentInk}26`,
@@ -421,14 +419,14 @@ export function ShopPage() {
               );
             })}
           </AnimatePresence>
-        </motion.section>
+        </section>
 
         {/* Design Your Candle Studio Callout */}
         <motion.section
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.65, delay: 0.2, ease: LUMA_EASE }}
-          className="mt-10 flex flex-col justify-between gap-5 rounded-3xl border p-5 shadow-[0_20px_50px_rgba(60,40,80,0.14)] backdrop-blur-md transition-colors duration-500 sm:mt-12 sm:flex-row sm:items-center sm:p-7"
+          transition={{ duration: 0.5, delay: 0.15, ease: LUMA_EASE }}
+          className="mt-10 flex flex-col justify-between gap-5 rounded-3xl border p-5 shadow-[0_20px_50px_rgba(60,40,80,0.14)] transition-colors duration-500 sm:mt-12 sm:flex-row sm:items-center sm:p-7"
           style={{
             backgroundColor: activeScent.surface,
             borderColor: `${activeScent.accentInk}1C`,
@@ -462,7 +460,7 @@ export function ShopPage() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.75, delay: 0.25, ease: LUMA_EASE }}
-          className="mt-14 rounded-3xl border p-6 shadow-[0_24px_60px_rgba(60,40,80,0.16)] backdrop-blur-md transition-colors duration-500 sm:p-8"
+          className="mt-14 rounded-3xl border p-6 shadow-[0_24px_60px_rgba(60,40,80,0.16)] transition-colors duration-500 sm:p-8"
           style={{
             backgroundColor: activeScent.surface,
             borderColor: `${activeScent.accentInk}1C`,

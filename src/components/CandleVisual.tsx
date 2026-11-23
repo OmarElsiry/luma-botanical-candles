@@ -6,6 +6,8 @@ interface CandleVisualProps {
   variant?: 'candle' | 'botanical';
   className?: string;
   alt?: string;
+  priority?: 'high' | 'low' | 'auto';
+  loading?: 'eager' | 'lazy';
 }
 
 export function CandleVisual({
@@ -13,6 +15,8 @@ export function CandleVisual({
   variant = 'candle',
   className = '',
   alt,
+  priority = 'auto',
+  loading = 'eager',
 }: CandleVisualProps) {
   const [failed, setFailed] = useState(false);
   const src = variant === 'botanical' ? scent.botanicalImg : scent.candleImg;
@@ -36,6 +40,9 @@ export function CandleVisual({
       alt={alt ?? ''}
       aria-hidden={alt ? undefined : true}
       draggable={false}
+      loading={loading}
+      decoding={priority === 'high' ? 'sync' : 'async'}
+      fetchPriority={priority}
       onError={() => setFailed(true)}
       className={`select-none object-contain ${className}`}
     />

@@ -118,7 +118,7 @@ export function CheckoutPage() {
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.65, ease: LUMA_EASE }}
-          className="rounded-3xl border p-6 shadow-[0_24px_60px_rgba(60,40,80,0.16)] backdrop-blur-md sm:p-8"
+          className="rounded-3xl border p-6 shadow-[0_24px_60px_rgba(60,40,80,0.16)] sm:p-8"
           style={{
             backgroundColor: activeScent.surface,
             borderColor: `${activeScent.accentInk}1C`,
@@ -263,7 +263,7 @@ export function CheckoutPage() {
     return (
       <div className="mx-auto max-w-xl px-4 py-14 text-center sm:px-10 sm:py-20">
         <div
-          className="rounded-3xl border p-8 shadow-[0_24px_60px_rgba(60,40,80,0.16)] backdrop-blur-md sm:p-10"
+          className="rounded-3xl border p-8 shadow-[0_24px_60px_rgba(60,40,80,0.16)] sm:p-10"
           style={{
             backgroundColor: activeScent.surface,
             borderColor: `${activeScent.accentInk}1C`,
@@ -290,7 +290,7 @@ export function CheckoutPage() {
     return (
       <div className="mx-auto max-w-xl px-4 py-14 text-center sm:px-10 sm:py-20">
         <div
-          className="rounded-3xl border p-8 shadow-[0_24px_60px_rgba(60,40,80,0.16)] backdrop-blur-md sm:p-10"
+          className="rounded-3xl border p-8 shadow-[0_24px_60px_rgba(60,40,80,0.16)] sm:p-10"
           style={{
             backgroundColor: activeScent.surface,
             borderColor: `${activeScent.accentInk}1C`,
@@ -528,7 +528,7 @@ export function CheckoutPage() {
             id="checkout-form"
             onSubmit={handleSubmit}
             noValidate
-            className="space-y-5 rounded-3xl border p-5 shadow-[0_24px_60px_rgba(60,40,80,0.14)] backdrop-blur-md sm:p-8 lg:col-span-7"
+            className="space-y-5 rounded-3xl border p-5 shadow-[0_24px_60px_rgba(60,40,80,0.14)] sm:p-8 lg:col-span-7"
             style={{
               backgroundColor: activeScent.surface,
               borderColor: `${activeScent.accentInk}1C`,
@@ -760,7 +760,7 @@ export function CheckoutPage() {
 
           {/* Desktop Sticky Order Summary */}
           <aside
-            className="hidden rounded-3xl border p-6 shadow-[0_24px_60px_rgba(60,40,80,0.14)] backdrop-blur-md sm:p-8 lg:sticky lg:top-24 lg:col-span-5 lg:block"
+            className="hidden rounded-3xl border p-6 shadow-[0_24px_60px_rgba(60,40,80,0.14)] sm:p-8 lg:sticky lg:top-24 lg:col-span-5 lg:block"
             style={{
               backgroundColor: activeScent.surface,
               borderColor: `${activeScent.accentInk}1C`,

@@ -53,6 +53,7 @@ export function HeroSlider() {
     return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   });
   const [noRevealAnim, setNoRevealAnim] = useState(false);
+  const [slidesHydrated, setSlidesHydrated] = useState(false);
   const [wordLayouts, setWordLayouts] = useState<WordMetrics[]>(() =>
     SCENTS.map(() => ({ fontSize: 445, letterSpacing: '0.005em', top: 180.555 }))
   );
@@ -255,16 +256,33 @@ export function HeroSlider() {
     failsafeTimerRef.current = window.setTimeout(() => {
       finishOpeningNow();
       startAutoplay();
-    }, 3000);
+    }, 1800);
 
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(runOpening);
-    } else {
+    let opened = false;
+    const triggerOpeningOnce = () => {
+      if (opened) return;
+      opened = true;
       runOpening();
+    };
+
+    const hydrateIdleId = window.setTimeout(() => {
+      setSlidesHydrated(true);
+    }, 180);
+
+    const fontFastTimer = window.setTimeout(triggerOpeningOnce, 120);
+    if (document.fonts && typeof document.fonts.load === 'function') {
+      document.fonts
+        .load('700 40px "Poppins"')
+        .then(triggerOpeningOnce)
+        .catch(triggerOpeningOnce);
+    } else {
+      triggerOpeningOnce();
     }
 
     return () => {
       window.removeEventListener('resize', onResize);
+      window.clearTimeout(hydrateIdleId);
+      window.clearTimeout(fontFastTimer);
       if (autoplayId !== null) window.clearInterval(autoplayId);
       if (openingTimerRef.current !== null) window.clearTimeout(openingTimerRef.current);
       if (failsafeTimerRef.current !== null) window.clearTimeout(failsafeTimerRef.current);
@@ -307,6 +325,10 @@ export function HeroSlider() {
       const slideA = slideRefs.current[fromIdx];
       const slideB = slideRefs.current[targetIdx];
       if (!slideA || !slideB) return;
+
+      if (!slidesHydrated) {
+        setSlidesHydrated(true);
+      }
 
       currentIndexRef.current = targetIdx;
       setCurrentIndex(targetIdx);
@@ -487,6 +509,7 @@ export function HeroSlider() {
       <main className="stage" ref={stageRef} aria-label="Luma candle scent showcase">
         {SCENTS.map((scent, idx) => {
           const isActive = idx === currentIndex;
+          const shouldRenderImages = slidesHydrated || isActive;
           const wordMetric = wordLayouts[idx];
 
           return (
@@ -565,11 +588,14 @@ export function HeroSlider() {
                       height: `calc(${scent.heroCandle.h} * var(--u))`,
                     }}
                   >
-                    <CandleVisual
-                      scent={scent}
-                      variant="candle"
-                      className="h-full w-full"
-                    />
+                    {shouldRenderImages && (
+                      <CandleVisual
+                        scent={scent}
+                        variant="candle"
+                        priority={isActive ? 'high' : 'low'}
+                        className="h-full w-full"
+                      />
+                    )}
                   </button>
                 </div>
 
@@ -604,7 +630,14 @@ export function HeroSlider() {
                             } as React.CSSProperties
                           }
                         >
-                          <CandleVisual scent={scent} variant="botanical" className="h-full w-full" />
+                          {shouldRenderImages && (
+                            <CandleVisual
+                              scent={scent}
+                              variant="botanical"
+                              priority={isActive ? 'high' : 'low'}
+                              className="h-full w-full"
+                            />
+                          )}
                         </div>
                       </div>
                     );
@@ -642,7 +675,14 @@ export function HeroSlider() {
                             } as React.CSSProperties
                           }
                         >
-                          <CandleVisual scent={scent} variant="botanical" className="h-full w-full" />
+                          {shouldRenderImages && (
+                            <CandleVisual
+                              scent={scent}
+                              variant="botanical"
+                              priority="low"
+                              className="h-full w-full"
+                            />
+                          )}
                         </div>
                       </div>
                     );

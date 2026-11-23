@@ -23,10 +23,10 @@ interface BespokeCandlePreviewProps {
 }
 
 const BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) || '/';
-const VESSEL_BLANK_SRC = `${BASE_URL}src/assets/images/luma_vessel_blank.png`;
-const VESSEL_MASK_SRC = `${BASE_URL}src/assets/images/luma_vessel_ceramic_mask.png`;
-const LABEL_MASK_SRC = `${BASE_URL}src/assets/images/luma_vessel_label_mask.png`;
-const FLAME_IMG_SRC = `${BASE_URL}src/assets/images/luma_studio_flame.png`;
+const VESSEL_BLANK_SRC = `${BASE_URL}src/assets/images/luma_vessel_blank.webp`;
+const VESSEL_MASK_SRC = `${BASE_URL}src/assets/images/luma_vessel_ceramic_mask.webp`;
+const LABEL_MASK_SRC = `${BASE_URL}src/assets/images/luma_vessel_label_mask.webp`;
+const FLAME_IMG_SRC = `${BASE_URL}src/assets/images/luma_studio_flame.webp`;
 
 export function isHexColorDark(hex: string): boolean {
   const clean = hex.replace('#', '');
@@ -117,6 +117,7 @@ export function BespokeCandlePreview({
             src={VESSEL_BLANK_SRC}
             alt={`Bespoke ${scent.name} candle`}
             draggable={false}
+            decoding="async"
             referrerPolicy="no-referrer"
             onError={() => setVesselFailed(true)}
             className="h-full w-full object-contain drop-shadow-[0_4px_8px_rgba(45,30,60,0.2)]"
@@ -247,6 +248,7 @@ export function BespokeCandlePreview({
               src={VESSEL_BLANK_SRC}
               alt={`Custom ${accordText} Luma stoneware candle`}
               draggable={false}
+              decoding="async"
               referrerPolicy="no-referrer"
               onError={() => setVesselFailed(true)}
               className="h-full w-full object-contain drop-shadow-[0_20px_34px_rgba(45,30,60,0.22)]"
@@ -411,6 +413,7 @@ export function BespokeCandlePreview({
                     src={FLAME_IMG_SRC}
                     alt=""
                     draggable={false}
+                    decoding="async"
                     referrerPolicy="no-referrer"
                     onError={() => setFlameFailed(true)}
                     className="h-full w-full object-contain"
