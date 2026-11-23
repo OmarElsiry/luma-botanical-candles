@@ -233,7 +233,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
     const timerId = window.setTimeout(() => {
       triggerFirebaseInit();
-    }, 1800);
+    }, 4500);
     return () => window.clearTimeout(timerId);
   }, [route.page, user, triggerFirebaseInit]);
 

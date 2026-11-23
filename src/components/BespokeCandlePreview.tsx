@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
 import {
   CANDLE_FONTS,
   getScentById,
@@ -213,11 +212,9 @@ export function BespokeCandlePreview({
     <div className="relative flex flex-col items-center justify-center select-none">
       {/* Warm ambient radiance behind flame when lit */}
       {lit && (
-        <motion.div
+        <div
           aria-hidden="true"
-          animate={{ opacity: [0.46, 0.72, 0.54], scale: [0.97, 1.03, 0.98] }}
-          transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
-          className="pointer-events-none absolute -top-6 h-40 w-40 rounded-full blur-2xl sm:-top-8 sm:h-48 sm:w-48"
+          className="candle-glow-pulse pointer-events-none absolute -top-6 h-40 w-40 rounded-full blur-2xl sm:-top-8 sm:h-48 sm:w-48"
           style={{
             background:
               'radial-gradient(circle, rgba(255,214,124,0.62) 0%, rgba(255,180,82,0.2) 48%, transparent 74%)',
@@ -399,14 +396,8 @@ export function BespokeCandlePreview({
                 className="pointer-events-none absolute left-[50%] top-[12.6%] aspect-square w-[68px] sm:w-[82px]"
                 style={{ transform: 'translate(-50%, -68%)' }}
               >
-                <motion.div
-                  animate={{
-                    scaleY: [1, 1.07, 0.96, 1.04, 1],
-                    scaleX: [1, 0.96, 1.03, 0.98, 1],
-                    rotate: [-1.4, 1.6, -1, 0.8, -1.4],
-                  }}
-                  transition={{ duration: 2.1, repeat: Infinity, ease: 'easeInOut' }}
-                  className="h-full w-full drop-shadow-[0_0_14px_rgba(255,196,80,0.65)]"
+                <div
+                  className="candle-flame-sway h-full w-full"
                   style={{ transformOrigin: '50% 70%' }}
                 >
                   <img
@@ -418,7 +409,7 @@ export function BespokeCandlePreview({
                     onError={() => setFlameFailed(true)}
                     className="h-full w-full object-contain"
                   />
-                </motion.div>
+                </div>
               </div>
             )}
           </>
