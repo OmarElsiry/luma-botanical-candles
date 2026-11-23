@@ -1,0 +1,198 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidOptionalString(data, key, maxLen) {
+      return !(key in data) || (data[key] is string && data[key].size() <= maxLen);
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll(['uid', 'firstName', 'surname', 'email', 'emailVerified', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'firstName', 'surname', 'email', 'emailVerified', 'phone', 'address', 'city', 'postalCode', 'createdAt', 'updatedAt'])
+        && isValidId(data.uid)
+        && data.uid == userId
+        && data.uid == request.auth.uid
+        && data.firstName is string && data.firstName.size() >= 1 && data.firstName.size() <= 60
+        && data.surname is string && data.surname.size() >= 1 && data.surname.size() <= 60
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 160
+        && data.emailVerified is bool
+        && isValidOptionalString(data, 'phone', 40)
+        && isValidOptionalString(data, 'address', 200)
+        && isValidOptionalString(data, 'city', 100)
+        && isValidOptionalString(data, 'postalCode', 30)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidCustomDesign(data, userId, designId) {
+      return data.keys().hasAll(['id', 'userId', 'vesselColorId', 'vesselColorHex', 'scentId', 'fontId', 'inkId', 'createdAt'])
+        && data.keys().hasOnly(['id', 'userId', 'vesselColorId', 'vesselColorHex', 'scentId', 'customText', 'customSubtext', 'fontId', 'inkId', 'createdAt'])
+        && isValidId(data.id)
+        && data.id == designId
+        && isValidId(data.userId)
+        && data.userId == userId
+        && data.userId == request.auth.uid
+        && data.vesselColorId is string && data.vesselColorId.size() >= 1 && data.vesselColorId.size() <= 40
+        && data.vesselColorHex is string && data.vesselColorHex.size() >= 4 && data.vesselColorHex.size() <= 16
+        && data.scentId is string && data.scentId.size() >= 1 && data.scentId.size() <= 40
+        && isValidOptionalString(data, 'customText', 32)
+        && isValidOptionalString(data, 'customSubtext', 32)
+        && data.fontId is string && data.fontId.size() >= 1 && data.fontId.size() <= 40
+        && data.inkId is string && data.inkId.size() >= 1 && data.inkId.size() <= 40
+        && data.createdAt is timestamp;
+    }
+
+    function isValidCustomBlend(data, userId, blendId) {
+      return data.keys().hasAll(['id', 'userId', 'fruits', 'toppings', 'sweetness', 'size', 'fontId', 'createdAt'])
+        && data.keys().hasOnly(['id', 'userId', 'fruits', 'toppings', 'sweetness', 'size', 'customText', 'fontId', 'createdAt'])
+        && isValidId(data.id)
+        && data.id == blendId
+        && isValidId(data.userId)
+        && data.userId == userId
+        && data.userId == request.auth.uid
+        && data.fruits is list && data.fruits.size() >= 1 && data.fruits.size() <= 3 && data.fruits[0] is string
+        && data.toppings is list && data.toppings.size() <= 6 && (data.toppings.size() == 0 || data.toppings[0] is string)
+        && data.sweetness is number && data.sweetness in [0, 25, 50, 75, 100]
+        && data.size in ['12oz', '16oz', 'pack3']
+        && isValidOptionalString(data, 'customText', 28)
+        && data.fontId is string && data.fontId.size() >= 1 && data.fontId.size() <= 40
+        && data.createdAt is timestamp;
+    }
+
+    function isValidOrder(data, orderId) {
+      return data.keys().hasAll([
+          'orderNumber', 'userId', 'firstName', 'surname', 'customerName',
+          'customerEmail', 'customerPhone', 'shippingAddress', 'paymentMethod',
+          'paymentStatus', 'subtotal', 'shipping', 'total', 'itemCount',
+          'itemsSummary', 'status', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'orderNumber', 'userId', 'firstName', 'surname', 'customerName',
+          'customerEmail', 'customerPhone', 'shippingAddress', 'deliveryNotes',
+          'paymentMethod', 'paymentStatus', 'subtotal', 'shipping', 'total',
+          'itemCount', 'itemsSummary', 'status', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.orderNumber)
+        && data.orderNumber == orderId
+        && isValidId(data.userId)
+        && data.userId == request.auth.uid
+        && data.firstName is string && data.firstName.size() >= 1 && data.firstName.size() <= 60
+        && data.surname is string && data.surname.size() >= 1 && data.surname.size() <= 60
+        && data.customerName is string && data.customerName.size() >= 2 && data.customerName.size() <= 120
+        && data.customerEmail is string && data.customerEmail.size() >= 3 && data.customerEmail.size() <= 160
+        && data.customerPhone is string && data.customerPhone.size() >= 7 && data.customerPhone.size() <= 40
+        && data.shippingAddress is string && data.shippingAddress.size() >= 5 && data.shippingAddress.size() <= 300
+        && isValidOptionalString(data, 'deliveryNotes', 240)
+        && (data.paymentMethod == 'cod' || data.paymentMethod == 'cod-pos')
+        && data.paymentStatus == 'Cash Due on Delivery'
+        && data.subtotal is number && data.subtotal >= 0
+        && data.shipping is number && data.shipping >= 0
+        && data.total is number && data.total >= 0
+        && data.itemCount is number && data.itemCount >= 1
+        && data.itemsSummary is string && data.itemsSummary.size() >= 1 && data.itemsSummary.size() <= 600
+        && (data.status == 'Confirmed' || data.status == 'Cancelled')
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    match /users/{userId} {
+      allow get: if isValidId(userId) && isOwner(userId);
+      allow list: if false;
+      allow create: if isValidId(userId)
+        && isOwner(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(userId)
+        && isOwner(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'firstName', 'surname', 'emailVerified', 'phone', 'address', 'city', 'postalCode', 'updatedAt'
+        ]);
+      allow delete: if false;
+
+      match /designs/{designId} {
+        allow get: if isValidId(userId) && isValidId(designId) && isOwner(userId);
+        allow list: if isValidId(userId) && isOwner(userId) && resource.data.userId == request.auth.uid;
+        allow create: if isValidId(userId)
+          && isValidId(designId)
+          && isOwner(userId)
+          && isEmailVerified()
+          && isValidCustomDesign(incoming(), userId, designId)
+          && incoming().createdAt == request.time
+          && exists(/databases/$(database)/documents/users/$(userId));
+        allow update: if false;
+        allow delete: if isValidId(userId) && isValidId(designId) && isOwner(userId) && isEmailVerified();
+      }
+
+      match /blends/{blendId} {
+        allow get: if isValidId(userId) && isValidId(blendId) && isOwner(userId);
+        allow list: if isValidId(userId) && isOwner(userId) && resource.data.userId == request.auth.uid;
+        allow create: if isValidId(userId)
+          && isValidId(blendId)
+          && isOwner(userId)
+          && isEmailVerified()
+          && isValidCustomBlend(incoming(), userId, blendId)
+          && incoming().createdAt == request.time
+          && exists(/databases/$(database)/documents/users/$(userId));
+        allow update: if false;
+        allow delete: if isValidId(userId) && isValidId(blendId) && isOwner(userId) && isEmailVerified();
+      }
+    }
+
+    match /orders/{orderId} {
+      allow get: if isValidId(orderId) && isSignedIn() && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isValidId(orderId)
+        && isEmailVerified()
+        && isValidOrder(incoming(), orderId)
+        && incoming().status == 'Confirmed'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(orderId)
+        && isEmailVerified()
+        && isValidOrder(incoming(), orderId)
+        && existing().userId == request.auth.uid
+        && existing().status == 'Confirmed'
+        && incoming().status == 'Cancelled'
+        && incoming().userId == existing().userId
+        && incoming().orderNumber == existing().orderNumber
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
+      allow delete: if false;
+    }
+  }
+}
